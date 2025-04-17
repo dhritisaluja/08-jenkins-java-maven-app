@@ -1,8 +1,5 @@
 def buildJar() {
     echo 'building the application...'
-    options {
-                timeout(time: 15, unit: 'MINUTES')
-            }
     sh 'mvn clean package -DskipTests -Dproject.build.sourceEncoding=UTF-8'
 }
 
