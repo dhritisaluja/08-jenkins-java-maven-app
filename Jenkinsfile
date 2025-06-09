@@ -1,20 +1,60 @@
+
 pipeline {
-  agent any // agent defines where this script should be executed (relevant on Jenkins clusters)
-  stages {
-    stage("build") {
-      steps {
-        echo 'building the application...'
-      }
+    agent any
+    environment {
+        // IMAGE_NAME will be constructed later
     }
-    stage("test") {
-      steps {
-        echo 'testing the application...'
-      }
+    stages {
+        stage('Increment Version') {
+            steps {
+                script {
+                    echo "Incrementing application version..."
+                    
+                    sh '''
+                       mvn build-helper:parse-version \\
+                       versions:set \\
+                       -DnewVersion=\\${parsedVersion.majorVersion}.\\${parsedVersion.minorVersion}.
+                       \\${parsedVersion.nextIncrementalVersion} \\
+                       versions:commit
+                    '''
+
+                    echo "Reading new version from pom.xml..."
+                    def pomContent = readFile 'pom.xml'
+                    def pom = new XmlSlurper().parseText(pomContent)
+                    def newAppVersion = pom.version.text()                     
+                    echo "New Application Version: ${newAppVersion}"
+
+                    env.IMAGE_NAME = "${newAppVersion}-${env.BUILD_NUMBER}"
+                    echo "Docker Image to be built: ${env.IMAGE_NAME}"
+                }
+            }
+        }
+
+        stage('Build App') {
+            steps {
+                echo "Building application with new version..."
+                // Clean ensures only the current version's JAR is present
+                sh "mvn clean package"
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo "Building Docker image: ${env.IMAGE_NAME}"
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh "docker build -t dhritisaluja/demo-app:$IMAGE_NAME ."
+                        sh 'echo $PASS | docker login -u $USER --password-stdin'
+                        sh "docker push dhritisaluja/demo-app:$IMAGE_NAME"
+                    
+                    }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo "Deploy stage (to be implemented)..."
+            }
+        }
     }
-    stage("deploy") {
-      steps {
-        echo 'deploying the application...'
-      }
-    }
-  }
 }
+
