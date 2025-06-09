@@ -1,11 +1,17 @@
 pipeline {
     agent any
-    tools{
+
+    tools {
         maven 'Maven'
     }
+
+    
     environment {
-        IMAGE_NAME = ''
+        DOCKER_REGISTRY_USER = 'dhritisaluja'
+        APP_NAME = 'demo-app'
+        IMAGE_NAME_WITH_TAG = '' // Initialize as empty, will be set later
     }
+
     stages {
         stage('Increment Version') {
             steps {
@@ -24,8 +30,11 @@ pipeline {
                  
                     echo "New Application Version: ${newAppVersion}"
 
-                    env.IMAGE_NAME = "${newAppVersion}-${env.BUILD_NUMBER}"
-                    echo "Docker Image to be built: ${env.IMAGE_NAME}"
+                    
+                    def imageTag = "${newAppVersion}-${env.BUILD_NUMBER}"
+                    env.IMAGE_NAME_WITH_TAG = "${env.DOCKER_REGISTRY_USER}/${env.APP_NAME}:${imageTag}"
+                    
+                    echo "Docker Image to be built: ${env.IMAGE_NAME_WITH_TAG}"
                 }
             }
         }
@@ -40,20 +49,26 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    echo "Building Docker image: ${env.IMAGE_NAME}"
+                    
+                    echo "Building Docker image: ${env.IMAGE_NAME_WITH_TAG}"
+                    
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                        sh "docker build -t dhritisaluja/demo-app:${IMAGE_NAME} ."
+                        
+                        sh "docker build -t ${env.IMAGE_NAME_WITH_TAG} ."
+                        
                         sh 'echo $PASS | docker login -u $USER --password-stdin'
-                        sh "docker push dhritisaluja/demo-app:${IMAGE_NAME}"
+                        
+                       
+                        sh "docker push ${env.IMAGE_NAME_WITH_TAG}"
                     }
-                } // closing script
-            } // closing steps
-        } // closing stage
+                }
+            }
+        }
 
         stage('Deploy') {
             steps {
                 echo "Deploy stage (to be implemented)..."
             }
         }
-    } // closing stages
-} // closing pipeline
+    }
+}
