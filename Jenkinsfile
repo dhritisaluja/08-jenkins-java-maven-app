@@ -20,9 +20,8 @@ pipeline {
                     '''
 
                     echo "Reading new version from pom.xml..."
-                    def pomContent = readFile 'pom.xml'
-                    def pom = new XmlSlurper().parseText(pomContent)
-                    def newAppVersion = pom.version.text()                     
+                    def newAppVersion = sh(script: "mvn help:evaluate -Dexpression=project.version -q -DforceStdout", returnStdout: true).trim()
+                 
                     echo "New Application Version: ${newAppVersion}"
 
                     env.IMAGE_NAME = "${newAppVersion}-${env.BUILD_NUMBER}"
