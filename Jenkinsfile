@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        // IMAGE_NAME will be constructed later
+        IMAGE_NAME = ''
     }
     stages {
         stage('Increment Version') {
