@@ -8,8 +8,8 @@ pipeline {
     
     environment {
         DOCKER_REGISTRY_USER = 'dhritisaluja'
-        APP_NAME = 'demo-app'
-        IMAGE_NAME_WITH_TAG = '' // Initialize as empty, will be set later
+        APP_NAME             = 'demo-app'
+        IMAGE_NAME_WITH_TAG  = '' // This will be properly set in the 'Increment Version' stage
     }
 
     stages {
@@ -30,7 +30,7 @@ pipeline {
                  
                     echo "New Application Version: ${newAppVersion}"
 
-                    
+                    // Now this line will work because the env variables are defined
                     def imageTag = "${newAppVersion}-${env.BUILD_NUMBER}"
                     env.IMAGE_NAME_WITH_TAG = "${env.DOCKER_REGISTRY_USER}/${env.APP_NAME}:${imageTag}"
                     
@@ -49,16 +49,13 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    
+                    // This will now correctly print "dhritisaluja/demo-app:1.1.9-X"
                     echo "Building Docker image: ${env.IMAGE_NAME_WITH_TAG}"
                     
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                        
+                        // These commands will now use the correct, full image name
                         sh "docker build -t ${env.IMAGE_NAME_WITH_TAG} ."
-                        
                         sh 'echo $PASS | docker login -u $USER --password-stdin'
-                        
-                       
                         sh "docker push ${env.IMAGE_NAME_WITH_TAG}"
                     }
                 }
