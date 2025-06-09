@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
     environment {
@@ -13,8 +12,7 @@ pipeline {
                     sh '''
                        mvn build-helper:parse-version \\
                        versions:set \\
-                       -DnewVersion=\\${parsedVersion.majorVersion}.\\${parsedVersion.minorVersion}.
-                       \\${parsedVersion.nextIncrementalVersion} \\
+                       -DnewVersion=\\${parsedVersion.majorVersion}.\\${parsedVersion.minorVersion}.\\${parsedVersion.nextIncrementalVersion} \\
                        versions:commit
                     '''
 
@@ -33,7 +31,6 @@ pipeline {
         stage('Build App') {
             steps {
                 echo "Building application with new version..."
-                // Clean ensures only the current version's JAR is present
                 sh "mvn clean package"
             }
         }
@@ -46,15 +43,15 @@ pipeline {
                         sh "docker build -t dhritisaluja/demo-app:${IMAGE_NAME} ."
                         sh 'echo $PASS | docker login -u $USER --password-stdin'
                         sh "docker push dhritisaluja/demo-app:${IMAGE_NAME}"
-                    
                     }
-        }
+                } // closing script
+            } // closing steps
+        } // closing stage
 
         stage('Deploy') {
             steps {
                 echo "Deploy stage (to be implemented)..."
             }
         }
-    }
-}
-
+    } // closing stages
+} // closing pipeline
